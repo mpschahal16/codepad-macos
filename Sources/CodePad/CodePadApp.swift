@@ -5,10 +5,11 @@ import UniformTypeIdentifiers
 @main
 struct CodePadApp: App {
     @StateObject private var store = EditorStore()
+    @NSApplicationDelegateAdaptor(CodePadAppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        WindowGroup {
-            CodePadWindow()
+        WindowGroup(id: "main") {
+            CodePadWindow(appDelegate: appDelegate)
                 .environmentObject(store)
                 .frame(minWidth: 760, minHeight: 500)
         }
@@ -32,6 +33,18 @@ struct CodePadApp: App {
                 .disabled(store.activeDocument == nil)
             }
         }
+    }
+}
+
+@MainActor
+final class CodePadAppDelegate: NSObject, NSApplicationDelegate {
+    var reopenWindow: (() -> Void)?
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        guard !hasVisibleWindows, let reopenWindow else { return true }
+        sender.activate(ignoringOtherApps: true)
+        reopenWindow()
+        return false
     }
 }
 
@@ -170,7 +183,9 @@ final class EditorStore: ObservableObject {
 }
 
 struct CodePadWindow: View {
+    let appDelegate: CodePadAppDelegate
     @EnvironmentObject private var store: EditorStore
+    @Environment(\.openWindow) private var openWindow
     @StateObject private var windowState = WindowState()
     @StateObject private var editorController = EditorController()
 
@@ -193,6 +208,9 @@ struct CodePadWindow: View {
             }
         }
         .background(Color(nsColor: .textBackgroundColor))
+        .onAppear {
+            appDelegate.reopenWindow = { openWindow(id: "main") }
+        }
     }
 
     private var header: some View {
