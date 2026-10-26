@@ -5,6 +5,7 @@ A small, native macOS text and code editor prototype for Apple Silicon. It is an
 ## Current features
 
 - Native macOS window and controls, built with SwiftUI and AppKit
+- Matching cat logo in the app icon and window header
 - Multiple open documents in tabs
 - New, open, save, and save as
 - UTF-8 text files
@@ -29,6 +30,8 @@ The script builds for the host architecture. Run it on an Apple Silicon Mac to p
 ## How the Notepad++ source informed the design
 
 The linked source separates application-level command handling (`PowerEditor/src/Notepad_plus.cpp` and `NppCommands.cpp`), document and file state (`ScintillaComponent/Buffer.*`), and the editor view (`ScintillaComponent/ScintillaEditView.*`, backed by Scintilla and Lexilla). This prototype keeps the same broad separation between document lifecycle, editor view, and commands, but uses native macOS APIs rather than copying the Windows-specific UI code.
+
+The editable SVG is in `Assets/cat-logo.svg`; the matching Core Graphics renderer is in `scripts/render-icon.swift`. Regenerate the ICNS bundle with `./scripts/make-icon.sh`.
 
 The linked Notepad++ repository is licensed under GPL-3.0 with additional project terms. This prototype does not include source files from that repository; it is licensed separately under GPL-3.0-or-later. Read `LICENSE` before redistributing.
 

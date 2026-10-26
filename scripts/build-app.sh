@@ -25,6 +25,7 @@ APP="$ROOT/dist/CodePad.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$ROOT/.build/release/CodePad" "$APP/Contents/MacOS/CodePad"
+cp "$ROOT/Resources/CodePad.icns" "$APP/Contents/Resources/CodePad.icns"
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -32,6 +33,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 <dict>
   <key>CFBundleDevelopmentRegion</key><string>en</string>
   <key>CFBundleExecutable</key><string>CodePad</string>
+  <key>CFBundleIconFile</key><string>CodePad</string>
   <key>CFBundleIdentifier</key><string>org.mpschahal16.codepad</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleName</key><string>CodePad</string>

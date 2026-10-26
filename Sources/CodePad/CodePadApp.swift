@@ -197,9 +197,7 @@ struct CodePadWindow: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            Image(systemName: "chevron.left.forwardslash.chevron.right")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.tint)
+            CatLogoMark(size: 32)
             Text("CodePad")
                 .font(.system(size: 14, weight: .semibold))
             Spacer()
@@ -429,5 +427,77 @@ struct NativeTextEditor: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             if parent.text != textView.string { parent.text = textView.string }
         }
+    }
+}
+
+struct CatLogoMark: View {
+    var size: CGFloat
+    private let ink = Color(red: 20 / 255, green: 34 / 255, blue: 56 / 255)
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.22)
+                .fill(LinearGradient(colors: [Color(red: 27 / 255, green: 43 / 255, blue: 66 / 255), Color(red: 12 / 255, green: 20 / 255, blue: 34 / 255)], startPoint: .topLeading, endPoint: .bottomTrailing))
+            CatHeadShape()
+                .fill(LinearGradient(colors: [Color(red: 167 / 255, green: 242 / 255, blue: 221 / 255), Color(red: 98 / 255, green: 207 / 255, blue: 177 / 255)], startPoint: .topLeading, endPoint: .bottomTrailing))
+            HStack(spacing: size * 0.20) {
+                Capsule().fill(ink).frame(width: size * 0.075, height: size * 0.14)
+                Capsule().fill(ink).frame(width: size * 0.075, height: size * 0.14)
+            }
+            .offset(y: size * 0.10)
+            CatNoseShape()
+                .fill(Color(red: 255 / 255, green: 140 / 255, blue: 121 / 255))
+                .frame(width: size * 0.12, height: size * 0.065)
+                .offset(y: size * 0.21)
+            CatMouthShape()
+                .stroke(ink.opacity(0.78), style: StrokeStyle(lineWidth: size * 0.035, lineCap: .round, lineJoin: .round))
+                .frame(width: size * 0.21, height: size * 0.105)
+                .offset(y: size * 0.285)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+struct CatHeadShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height) }
+        var path = Path()
+        path.move(to: p(0.24, 0.44))
+        path.addLine(to: p(0.19, 0.22))
+        path.addLine(to: p(0.43, 0.34))
+        path.addQuadCurve(to: p(0.57, 0.34), control: p(0.50, 0.31))
+        path.addLine(to: p(0.81, 0.22))
+        path.addLine(to: p(0.76, 0.44))
+        path.addCurve(to: p(0.78, 0.78), control1: p(0.91, 0.53), control2: p(0.91, 0.68))
+        path.addCurve(to: p(0.50, 0.91), control1: p(0.71, 0.91), control2: p(0.60, 0.93))
+        path.addCurve(to: p(0.22, 0.78), control1: p(0.40, 0.93), control2: p(0.29, 0.91))
+        path.addCurve(to: p(0.24, 0.44), control1: p(0.09, 0.68), control2: p(0.09, 0.53))
+        path.closeSubpath()
+        return path
+    }
+}
+
+struct CatNoseShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+struct CatMouthShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.height * 0.32))
+        path.move(to: CGPoint(x: rect.midX, y: rect.height * 0.32))
+        path.addQuadCurve(to: CGPoint(x: rect.width * 0.15, y: rect.height * 0.72), control: CGPoint(x: rect.width * 0.30, y: rect.maxY))
+        path.move(to: CGPoint(x: rect.midX, y: rect.height * 0.32))
+        path.addQuadCurve(to: CGPoint(x: rect.width * 0.85, y: rect.height * 0.72), control: CGPoint(x: rect.width * 0.70, y: rect.maxY))
+        return path
     }
 }
