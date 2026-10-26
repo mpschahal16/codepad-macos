@@ -27,6 +27,14 @@ open dist/CodePad.app
 
 The script builds for the host architecture. Run it on an Apple Silicon Mac to produce an `arm64` app. The app is ad-hoc signed for local testing, but it is not Developer ID signed or notarized, so macOS may show a security prompt when opening it.
 
+To package the built app as a drag-to-Applications disk image, run:
+
+```sh
+./scripts/make-dmg.sh
+```
+
+This creates `dist/CodePad-macOS-arm64.dmg`. Build the app first with `./scripts/build-app.sh` if `dist/CodePad.app` is missing.
+
 ## How the Notepad++ source informed the design
 
 The linked source separates application-level command handling (`PowerEditor/src/Notepad_plus.cpp` and `NppCommands.cpp`), document and file state (`ScintillaComponent/Buffer.*`), and the editor view (`ScintillaComponent/ScintillaEditView.*`, backed by Scintilla and Lexilla). This prototype keeps the same broad separation between document lifecycle, editor view, and commands, but uses native macOS APIs rather than copying the Windows-specific UI code.
