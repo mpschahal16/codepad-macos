@@ -272,6 +272,9 @@ struct CodePadWindow: View {
             if document.isDirty { Text("Modified").foregroundStyle(.orange) }
             Text(document.url?.lastPathComponent ?? "Unsaved")
                 .lineLimit(1)
+            Label("Ln \(editorController.cursorLine), Col \(editorController.cursorColumn)", systemImage: "textformat.123")
+                .monospacedDigit()
+                .help("Current line and column")
         }
         .font(.system(size: 11))
         .foregroundStyle(.secondary)
@@ -334,6 +337,24 @@ final class WindowState: ObservableObject {
 @MainActor
 final class EditorController: ObservableObject {
     weak var textView: NSTextView?
+    @Published private(set) var cursorLine = 1
+    @Published private(set) var cursorColumn = 1
+
+    func updateCursorPosition(in textView: NSTextView) {
+        let contents = textView.string as NSString
+        let location = min(textView.selectedRange().location, contents.length)
+        let prefix = contents.substring(to: location) as NSString
+        let line = prefix.components(separatedBy: "\n").count
+        let lastNewline = prefix.range(of: "\n", options: .backwards)
+        let column = lastNewline.location == NSNotFound
+            ? location + 1
+            : location - NSMaxRange(lastNewline) + 1
+
+        if cursorLine != line || cursorColumn != column {
+            cursorLine = line
+            cursorColumn = column
+        }
+    }
 
     func findNext(_ query: String) {
         guard !query.isEmpty, let textView else { return }
@@ -407,6 +428,7 @@ struct NativeTextEditor: NSViewRepresentable {
         textView.string = text
         scrollView.documentView = textView
         controller.textView = textView
+        controller.updateCursorPosition(in: textView)
         return scrollView
     }
 
@@ -417,6 +439,7 @@ struct NativeTextEditor: NSViewRepresentable {
         if textView.string != text {
             textView.string = text
         }
+        controller.updateCursorPosition(in: textView)
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
@@ -426,6 +449,12 @@ struct NativeTextEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             if parent.text != textView.string { parent.text = textView.string }
+            parent.controller.updateCursorPosition(in: textView)
+        }
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            parent.controller.updateCursorPosition(in: textView)
         }
     }
 }
