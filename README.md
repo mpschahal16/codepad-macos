@@ -46,6 +46,12 @@ The editable SVG is in `Assets/cat-logo.svg`; the matching Core Graphics rendere
 
 Scintilla and Lexilla are distributed under their permissive license in `Vendor/NotepadPlusPlus/licenses/Scintilla-Lexilla-License.txt`. The project is licensed under GPL-3.0-or-later; read `LICENSE` and the third-party license before redistributing.
 
+## Acknowledgments
+
+Thank you to Don Ho ([don.h@free.fr](mailto:don.h@free.fr)) and the Notepad++ contributors for building Notepad++ and for making its source code available as open source. CodePad would not exist without that work: the Notepad++ source described above was the reference for this editor's design, and it is the upstream source for the bundled Scintilla and Lexilla code in `Vendor/NotepadPlusPlus/`. We are grateful to the Notepad++ developer and community for keeping the project open.
+
+Thanks also to Neil Hodgson and the Scintilla and Lexilla contributors, whose editor components Notepad++ itself builds on.
+
 ## Open-source status
 
 Contributions and issue reports are welcome. Please use the name and visual identity of this independent project when publishing it; do not present it as an official Notepad++ macOS release.
