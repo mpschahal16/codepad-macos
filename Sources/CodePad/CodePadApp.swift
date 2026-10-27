@@ -438,26 +438,44 @@ struct NativeTextEditor: NSViewRepresentable {
         editor.lexerName = mode.lexer
         editor.keywordSets = mode.keywords
         editor.text = text
-        editor.onChange = { [weak controller] editedText, line, column, _ in
-            DispatchQueue.main.async {
-                if self.text != editedText { self.text = editedText }
-                controller?.updateCursorPosition(line: line, column: column)
-            }
+        editor.onChange = { [weak coordinator = context.coordinator] editedText, line, column, _ in
+            coordinator?.editorDidChange(text: editedText, line: line, column: column)
         }
         controller.scintillaView = editor
         return editor
     }
 
     func updateNSView(_ editor: CodePadScintillaView, context: Context) {
+        let coordinator = context.coordinator
+        // The view is reused when the active tab changes, so the callback must follow
+        // the current binding instead of the document that created the view.
+        coordinator.parent = self
+        coordinator.isUpdatingFromView = true
+        defer { coordinator.isUpdatingFromView = false }
         controller.scintillaView = editor
+        if editor.text != text { editor.text = text }
         if editor.lexerName != mode.lexer { editor.lexerName = mode.lexer }
         if editor.keywordSets != mode.keywords { editor.keywordSets = mode.keywords }
-        if editor.text != text { editor.text = text }
     }
 
     final class Coordinator: NSObject {
         var parent: NativeTextEditor
+        var isUpdatingFromView = false
+
         init(_ parent: NativeTextEditor) { self.parent = parent }
+
+        func editorDidChange(text editedText: String, line: Int, column: Int) {
+            // Notifications fired while loading a document (text or lexer assignment)
+            // describe the old contents and must not overwrite the incoming document.
+            guard !isUpdatingFromView else { return }
+            if parent.text != editedText {
+                parent.text = editedText
+            }
+            let controller = parent.controller
+            DispatchQueue.main.async {
+                controller.updateCursorPosition(line: line, column: column)
+            }
+        }
     }
 }
 struct CatLogoMark: View {
