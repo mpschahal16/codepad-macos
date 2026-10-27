@@ -2,6 +2,8 @@
 
 A small, native macOS text and code editor prototype for Apple Silicon. It is an independent project with a familiar tabbed-editor workflow; it is not an official Notepad++ release and is not affiliated with the Notepad++ project.
 
+![CodePad for macOS showing a Swift file open in two tabs with syntax highlighting, a line-number gutter, and the New, Open, Save, and Find toolbar](Assets/preview.png)
+
 ## Current features
 
 - Native macOS window and controls, built with SwiftUI and AppKit
