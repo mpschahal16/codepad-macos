@@ -10,11 +10,14 @@ A small, native macOS text and code editor prototype for Apple Silicon. It is an
 - New, open, save, and save as
 - UTF-8 text files
 - Native Find interface (`⌘F`)
+- Syntax highlighting and automatic language detection for C, C++, C#, Java, JavaScript, TypeScript, Python, Swift, HTML, CSS, JSON, XML, and SQL
+- A language-mode picker for changing the detected mode
+- Scintilla line-number gutter
 - Unsaved-change indicator and close confirmation
-- File-type label and line count
+- Encoding label and line count
 - Menu and keyboard shortcuts for common actions
 
-This is a prototype, not feature parity with Notepad++. Syntax highlighting, plugins, session restore, encoding selection, and advanced search are not implemented yet.
+This is a prototype, not feature parity with Notepad++. Plugins, session restore, encoding selection, and advanced search are not implemented yet. Swift uses the C-family lexer as an initial approximation.
 
 ## Build on Apple Silicon
 
@@ -37,11 +40,11 @@ This creates `dist/CodePad-macOS-arm64.dmg`. Build the app first with `./scripts
 
 ## How the Notepad++ source informed the design
 
-The linked source separates application-level command handling (`PowerEditor/src/Notepad_plus.cpp` and `NppCommands.cpp`), document and file state (`ScintillaComponent/Buffer.*`), and the editor view (`ScintillaComponent/ScintillaEditView.*`, backed by Scintilla and Lexilla). This prototype keeps the same broad separation between document lifecycle, editor view, and commands, but uses native macOS APIs rather than copying the Windows-specific UI code.
+The linked source separates application-level command handling (`PowerEditor/src/Notepad_plus.cpp` and `NppCommands.cpp`), document and file state (`ScintillaComponent/Buffer.*`), and the editor view (`ScintillaComponent/ScintillaEditView.*`, backed by Scintilla and Lexilla). CodePad uses the upstream Scintilla editor and Lexilla lexer sources for syntax coloring, while keeping the document lifecycle and interface native to macOS.
 
 The editable SVG is in `Assets/cat-logo.svg`; the matching Core Graphics renderer is in `scripts/render-icon.swift`. Regenerate the ICNS bundle with `./scripts/make-icon.sh`.
 
-The linked Notepad++ repository is licensed under GPL-3.0 with additional project terms. This prototype does not include source files from that repository; it is licensed separately under GPL-3.0-or-later. Read `LICENSE` before redistributing.
+Scintilla and Lexilla are distributed under their permissive license in `Vendor/NotepadPlusPlus/licenses/Scintilla-Lexilla-License.txt`. The project is licensed under GPL-3.0-or-later; read `LICENSE` and the third-party license before redistributing.
 
 ## Open-source status
 

@@ -1,6 +1,37 @@
 import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
+import ScintillaNative
+
+struct LanguageMode: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let lexer: String
+    let extensions: [String]
+    let keywords: [String]
+
+    static let all: [LanguageMode] = [
+        .init(id: "plain", name: "Plain Text", lexer: "", extensions: ["txt", "text"], keywords: []),
+        .init(id: "c", name: "C", lexer: "cpp", extensions: ["c", "h"], keywords: ["auto break case char const continue default do double else enum extern float for goto if inline int long register restrict return short signed sizeof static struct switch typedef union unsigned void volatile while", "size_t FILE NULL true false"]),
+        .init(id: "cpp", name: "C++", lexer: "cpp", extensions: ["cc", "cpp", "cxx", "hpp", "hh", "hxx"], keywords: ["alignas alignof and and_eq asm auto bitand bitor bool break case catch char class compl concept const constexpr const_cast continue co_await co_return co_yield decltype default delete do double dynamic_cast else enum explicit export extern false float for friend goto if inline int long mutable namespace new noexcept not not_eq nullptr operator or or_eq private protected public register reinterpret_cast requires return short signed sizeof static static_assert static_cast struct switch template this thread_local throw true try typedef typeid typename union unsigned using virtual void volatile wchar_t while xor", "std string vector map set unordered_map unique_ptr shared_ptr"]),
+        .init(id: "csharp", name: "C#", lexer: "cpp", extensions: ["cs"], keywords: ["abstract as base bool break byte case catch char checked class const continue decimal default delegate do double else enum event explicit extern false finally fixed float for foreach goto if implicit in int interface internal is lock long namespace new null object operator out override params private protected public readonly ref return sbyte sealed short sizeof stackalloc static string struct switch this throw true try typeof uint ulong unchecked unsafe ushort using virtual void volatile while async await var get set"]),
+        .init(id: "java", name: "Java", lexer: "cpp", extensions: ["java"], keywords: ["abstract assert boolean break byte case catch char class const continue default do double else enum extends final finally float for if implements import instanceof int interface long native new package private protected public return short static strictfp super switch synchronized this throw throws transient try void volatile while true false null var record sealed permits yield", "String Object System Integer List Map Set"]),
+        .init(id: "javascript", name: "JavaScript", lexer: "cpp", extensions: ["js", "mjs", "cjs", "jsx"], keywords: ["async await break case catch class const continue debugger default delete do else export extends false finally for function if import in instanceof let new null return static super switch this throw true try typeof var void while with yield", "Array Boolean Date Error Function JSON Math Number Object Promise RegExp String Map Set"]),
+        .init(id: "typescript", name: "TypeScript", lexer: "cpp", extensions: ["ts", "tsx"], keywords: ["abstract any as asserts async await bigint boolean break case catch class const constructor continue declare default delete do else enum export extends false finally for from function get if implements import in infer instanceof interface is keyof let module namespace never new null number object package private protected public readonly require global return set static string super switch symbol this throw true try type typeof undefined unique unknown var void while with yield", "Array Date Error Function Map Object Promise Record Set String"]),
+        .init(id: "python", name: "Python", lexer: "python", extensions: ["py", "pyw", "pyi"], keywords: ["and as assert async await break class continue def del elif else except False finally for from global if import in is lambda nonlocal not or pass raise return True try while with yield None", "ArithmeticError Exception IndexError KeyError RuntimeError self super print len range"]),
+        .init(id: "swift", name: "Swift", lexer: "cpp", extensions: ["swift"], keywords: ["associatedtype async await break case catch class continue defer defer else enum extension fallthrough false fileprivate for func guard if import in init inout internal let nil open operator private protocol public repeat rethrows return self Self static struct subscript super switch throw throws true try typealias var where while", "Array Bool Dictionary Double Error Float Int Optional Result Set String UInt Void"]),
+        .init(id: "html", name: "HTML", lexer: "hypertext", extensions: ["html", "htm", "xhtml", "shtml"], keywords: ["a abbr address article aside audio b body br button canvas caption code div em footer form h1 h2 h3 head header html img input label li link main meta nav ol option p script section select span style table tbody td textarea th thead title tr ul video", "class id href src alt type name value role aria-label"]),
+        .init(id: "css", name: "CSS", lexer: "css", extensions: ["css", "scss", "less"], keywords: ["important inherit initial unset auto none block flex grid inline inline-block absolute relative fixed sticky center cover contain"]),
+        .init(id: "json", name: "JSON", lexer: "json", extensions: ["json", "jsonc", "jsonl"], keywords: []),
+        .init(id: "xml", name: "XML", lexer: "xml", extensions: ["xml", "xsd", "xsl", "plist", "svg"], keywords: ["xml version encoding xmlns xmlns:xsi xsi:schemaLocation"]),
+        .init(id: "sql", name: "SQL", lexer: "sql", extensions: ["sql"], keywords: ["add all alter and any as asc backup between by case check column constraint create database default delete desc distinct drop exec exists foreign from full join group index inner insert into is join key left like limit not null on or order outer primary procedure references right row select set table top truncate union unique update values view where", "bigint binary bit char date datetime decimal int integer money nchar numeric nvarchar real smallint text time timestamp tinyint uniqueidentifier varchar"])
+    ]
+
+    static func detect(url: URL?) -> LanguageMode {
+        guard let ext = url?.pathExtension.lowercased(), !ext.isEmpty else { return all[0] }
+        return all.first { $0.extensions.contains(ext) } ?? all[0]
+    }
+}
 
 @main
 struct CodePadApp: App {
@@ -55,6 +86,7 @@ final class EditorDocument: ObservableObject, Identifiable {
         didSet { isDirty = text != savedText }
     }
     @Published var isDirty = false
+    @Published var languageMode: LanguageMode
     var url: URL?
     private var savedText: String
 
@@ -62,18 +94,16 @@ final class EditorDocument: ObservableObject, Identifiable {
         self.text = text
         self.savedText = text
         self.url = url
+        self.languageMode = LanguageMode.detect(url: url)
     }
 
     var title: String { url?.lastPathComponent ?? "Untitled" }
     var lineCount: Int { max(1, text.reduce(into: 1) { if $1 == "\n" { $0 += 1 } }) }
-    var language: String {
-        guard let ext = url?.pathExtension, !ext.isEmpty else { return "Plain Text" }
-        let names = ["swift": "Swift", "m": "Objective-C", "mm": "Objective-C++", "c": "C", "h": "C / C++", "cpp": "C++", "cc": "C++", "html": "HTML", "css": "CSS", "js": "JavaScript", "ts": "TypeScript", "json": "JSON", "py": "Python", "rb": "Ruby", "go": "Go", "rs": "Rust", "md": "Markdown", "xml": "XML", "yaml": "YAML", "yml": "YAML", "sh": "Shell"]
-        return names[ext.lowercased()] ?? ext.uppercased()
-    }
-
     func markSaved(at newURL: URL? = nil) {
-        if let newURL { url = newURL }
+        if let newURL, url != newURL {
+            url = newURL
+            languageMode = LanguageMode.detect(url: newURL)
+        }
         savedText = text
         isDirty = false
     }
@@ -283,7 +313,22 @@ struct CodePadWindow: View {
 
     private func statusBar(_ document: EditorDocument) -> some View {
         HStack(spacing: 14) {
-            Text(document.language)
+            Menu {
+                ForEach(LanguageMode.all) { mode in
+                    Button {
+                        document.languageMode = mode
+                    } label: {
+                        if document.languageMode.id == mode.id {
+                            Label(mode.name, systemImage: "checkmark")
+                        } else {
+                            Text(mode.name)
+                        }
+                    }
+                }
+            } label: {
+                Label(document.languageMode.name, systemImage: "chevron.up.chevron.down")
+            }
+            .menuStyle(.borderlessButton)
             Text("UTF-8")
             Text("\(document.lineCount) lines")
             Spacer()
@@ -341,7 +386,7 @@ struct EditorPane: View {
     @ObservedObject var controller: EditorController
 
     var body: some View {
-        NativeTextEditor(text: $document.text, controller: controller)
+        NativeTextEditor(text: $document.text, mode: document.languageMode, controller: controller)
             .accessibilityLabel("Text editor")
     }
 }
@@ -354,47 +399,17 @@ final class WindowState: ObservableObject {
 
 @MainActor
 final class EditorController: ObservableObject {
-    weak var textView: NSTextView?
+    weak var scintillaView: CodePadScintillaView?
     @Published private(set) var cursorLine = 1
     @Published private(set) var cursorColumn = 1
 
-    func updateCursorPosition(in textView: NSTextView) {
-        let contents = textView.string as NSString
-        let location = min(textView.selectedRange().location, contents.length)
-        let prefix = contents.substring(to: location) as NSString
-        let line = prefix.components(separatedBy: "\n").count
-        let lastNewline = prefix.range(of: "\n", options: .backwards)
-        let column = lastNewline.location == NSNotFound
-            ? location + 1
-            : location - NSMaxRange(lastNewline) + 1
-
-        if cursorLine != line || cursorColumn != column {
-            cursorLine = line
-            cursorColumn = column
-        }
+    func updateCursorPosition(line: Int, column: Int) {
+        cursorLine = max(1, line)
+        cursorColumn = max(1, column)
     }
 
-    func findNext(_ query: String) {
-        guard !query.isEmpty, let textView else { return }
-        let contents = textView.string as NSString
-        guard contents.length > 0 else { return }
-        let selected = textView.selectedRange()
-        let start = min(NSMaxRange(selected), contents.length)
-        let remainder = NSRange(location: start, length: contents.length - start)
-        var match = contents.range(of: query, options: [.caseInsensitive], range: remainder)
-        if match.location == NSNotFound, start > 0 {
-            match = contents.range(of: query, options: [.caseInsensitive], range: NSRange(location: 0, length: start))
-        }
-        select(match, in: textView)
-    }
-
-    func findPrevious(_ query: String) {
-        guard !query.isEmpty, let textView else { return }
-        let contents = textView.string as NSString
-        let end = min(textView.selectedRange().location, contents.length)
-        let match = contents.range(of: query, options: [.caseInsensitive, .backwards], range: NSRange(location: 0, length: end))
-        select(match, in: textView)
-    }
+    func findNext(_ query: String) { scintillaView?.find(query, backwards: false) }
+    func findPrevious(_ query: String) { scintillaView?.find(query, backwards: true) }
 
     func matchCount(_ query: String, in text: String) -> Int {
         guard !query.isEmpty else { return 0 }
@@ -409,176 +424,42 @@ final class EditorController: ObservableObject {
         }
         return count
     }
-
-    private func select(_ range: NSRange, in textView: NSTextView) {
-        guard range.location != NSNotFound else { return }
-        textView.setSelectedRange(range)
-        textView.scrollRangeToVisible(range)
-        textView.window?.makeFirstResponder(textView)
-    }
 }
 
 struct NativeTextEditor: NSViewRepresentable {
     @Binding var text: String
+    let mode: LanguageMode
     @ObservedObject var controller: EditorController
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSScrollView()
-        scrollView.hasVerticalScroller = true
-        scrollView.hasHorizontalScroller = true
-        scrollView.drawsBackground = true
-
-        let textView = NSTextView()
-        textView.isRichText = false
-        textView.isEditable = true
-        textView.isSelectable = true
-        textView.allowsUndo = true
-        textView.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
-        textView.textContainerInset = NSSize(width: 10, height: 12)
-        textView.isVerticallyResizable = true
-        textView.isHorizontallyResizable = true
-        textView.autoresizingMask = [.width]
-        textView.textContainer?.widthTracksTextView = false
-        textView.textContainer?.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        textView.delegate = context.coordinator
-        textView.string = text
-        scrollView.documentView = textView
-        let lineNumberRuler = LineNumberRulerView(textView: textView, scrollView: scrollView)
-        scrollView.verticalRulerView = lineNumberRuler
-        scrollView.hasVerticalRuler = true
-        scrollView.rulersVisible = true
-        lineNumberRuler.needsDisplay = true
-        controller.textView = textView
-        controller.updateCursorPosition(in: textView)
-        return scrollView
-    }
-
-    func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        context.coordinator.parent = self
-        guard let textView = scrollView.documentView as? NSTextView else { return }
-        controller.textView = textView
-        if textView.string != text {
-            textView.string = text
+    func makeNSView(context: Context) -> CodePadScintillaView {
+        let editor = CodePadScintillaView(frame: .zero)
+        editor.lexerName = mode.lexer
+        editor.keywordSets = mode.keywords
+        editor.text = text
+        editor.onChange = { [weak controller] editedText, line, column, _ in
+            DispatchQueue.main.async {
+                if self.text != editedText { self.text = editedText }
+                controller?.updateCursorPosition(line: line, column: column)
+            }
         }
-        controller.updateCursorPosition(in: textView)
+        controller.scintillaView = editor
+        return editor
     }
 
-    final class Coordinator: NSObject, NSTextViewDelegate {
+    func updateNSView(_ editor: CodePadScintillaView, context: Context) {
+        controller.scintillaView = editor
+        if editor.lexerName != mode.lexer { editor.lexerName = mode.lexer }
+        if editor.keywordSets != mode.keywords { editor.keywordSets = mode.keywords }
+        if editor.text != text { editor.text = text }
+    }
+
+    final class Coordinator: NSObject {
         var parent: NativeTextEditor
         init(_ parent: NativeTextEditor) { self.parent = parent }
-
-        func textDidChange(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
-            if parent.text != textView.string { parent.text = textView.string }
-            parent.controller.updateCursorPosition(in: textView)
-            (textView.enclosingScrollView?.verticalRulerView as? LineNumberRulerView)?.needsDisplay = true
-        }
-
-        func textViewDidChangeSelection(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
-            parent.controller.updateCursorPosition(in: textView)
-            (textView.enclosingScrollView?.verticalRulerView as? LineNumberRulerView)?.needsDisplay = true
-        }
     }
 }
-
-final class LineNumberRulerView: NSRulerView {
-    private weak var textView: NSTextView?
-    private let labelFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
-    private let horizontalPadding: CGFloat = 8
-
-    init(textView: NSTextView, scrollView: NSScrollView) {
-        self.textView = textView
-        super.init(scrollView: scrollView, orientation: .verticalRuler)
-        clientView = textView
-        ruleThickness = 44
-    }
-
-    required init(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func drawHashMarksAndLabels(in rect: NSRect) {
-        guard let textView,
-              let layoutManager = textView.layoutManager,
-              let textContainer = textView.textContainer else { return }
-
-        NSColor.windowBackgroundColor.setFill()
-        NSBezierPath(rect: rect).fill()
-        NSColor.separatorColor.withAlphaComponent(0.55).setStroke()
-        let border = NSBezierPath()
-        border.move(to: NSPoint(x: bounds.maxX - 0.5, y: rect.minY))
-        border.line(to: NSPoint(x: bounds.maxX - 0.5, y: rect.maxY))
-        border.stroke()
-
-        layoutManager.ensureLayout(for: textContainer)
-        let visibleRect = textView.visibleRect
-        let glyphRange = layoutManager.glyphRange(forBoundingRect: visibleRect, in: textContainer)
-        let string = textView.string as NSString
-        let caretLocation = min(textView.selectedRange().location, string.length)
-        let currentLine = string.substring(to: caretLocation).reduce(into: 1) { count, character in
-            if character == "\n" { count += 1 }
-        }
-        if glyphRange.length == 0, string.length == 0 {
-            let lineHeight = textView.font?.boundingRectForFont.height ?? 16
-            let textOrigin = textView.textContainerOrigin
-            let lineRect = NSRect(x: textOrigin.x, y: textOrigin.y, width: 1, height: lineHeight)
-            drawLineNumber(1, in: convert(lineRect, from: textView), isCurrent: true)
-            return
-        }
-        let characterRange = layoutManager.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
-        let preceding = NSRange(location: 0, length: min(characterRange.location, string.length))
-        let firstVisibleLine = string.substring(with: preceding).reduce(into: 1) { count, character in
-            if character == "\n" { count += 1 }
-        }
-        var lastDrawnLine = firstVisibleLine - 1
-
-        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { lineRect, _, container, fragmentGlyphRange, _ in
-            guard container === textContainer else { return }
-            let fragmentCharacters = layoutManager.characterRange(forGlyphRange: fragmentGlyphRange, actualGlyphRange: nil)
-            let lineStart = string.substring(to: min(fragmentCharacters.location, string.length))
-            let number = lineStart.reduce(into: 1) { count, character in
-                if character == "\n" { count += 1 }
-            }
-            guard number != lastDrawnLine else { return }
-            lastDrawnLine = number
-
-            let textLineRect = lineRect.offsetBy(dx: textView.textContainerOrigin.x, dy: textView.textContainerOrigin.y)
-            self.drawLineNumber(number, in: self.convert(textLineRect, from: textView), isCurrent: number == currentLine)
-        }
-
-        if string.hasSuffix("\n"), layoutManager.extraLineFragmentTextContainer === textContainer {
-            let extraLineRect = layoutManager.extraLineFragmentRect.offsetBy(
-                dx: textView.textContainerOrigin.x,
-                dy: textView.textContainerOrigin.y
-            )
-            drawLineNumber(currentLineCount(in: string), in: convert(extraLineRect, from: textView), isCurrent: currentLine == currentLineCount(in: string))
-        }
-    }
-
-    private func currentLineCount(in string: NSString) -> Int {
-        string.substring(to: string.length).reduce(into: 1) { count, character in
-            if character == "\n" { count += 1 }
-        }
-    }
-
-    private func drawLineNumber(_ number: Int, in lineRect: NSRect, isCurrent: Bool) {
-        let label = "\(number)" as NSString
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: isCurrent ? NSFont.monospacedSystemFont(ofSize: 11, weight: .semibold) : labelFont,
-            .foregroundColor: isCurrent ? NSColor.controlAccentColor : NSColor.secondaryLabelColor
-        ]
-        let labelSize = label.size(withAttributes: attributes)
-        let origin = NSPoint(
-            x: bounds.width - labelSize.width - horizontalPadding,
-            y: lineRect.midY - labelSize.height / 2
-        )
-        label.draw(at: origin, withAttributes: attributes)
-    }
-}
-
 struct CatLogoMark: View {
     var size: CGFloat
     private let ink = Color(red: 20 / 255, green: 34 / 255, blue: 56 / 255)
