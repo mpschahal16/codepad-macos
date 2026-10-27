@@ -345,7 +345,7 @@ struct CodePad16Window: View {
                 .truncationMode(.middle)
                 .layoutPriority(1)
                 .help(document.url?.path ?? "This document has not been saved yet")
-            Label("Ln \(editorController.cursorLine), Col \(editorController.cursorColumn)", systemImage: "textformat.123")
+            Text("Ln: \(editorController.cursorLine), Col: \(editorController.cursorColumn)")
                 .monospacedDigit()
                 .help("Current line and column")
         }
