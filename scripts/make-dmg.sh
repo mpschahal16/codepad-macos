@@ -22,9 +22,11 @@ rm -rf "$STAGING"
 mkdir -p "$STAGING"
 ditto "$APP" "$STAGING/CodePad.app"
 ln -s /Applications "$STAGING/Applications"
+cp "$ROOT/scripts/DMG-Layout.DS_Store" "$STAGING/.DS_Store"
 rm -f "$RAW_IMAGE" "$OUTPUT"
 # Building an HFS+ image directly avoids hdiutil create's dependency on
-# DiskManagement to attach a temporary image. Convert it to compressed UDIF.
+# DiskManagement to attach a temporary image. The Finder layout template is
+# copied into the staging folder before image creation.
 hdiutil makehybrid \
   -hfs \
   -default-volume-name "CodePad" \
