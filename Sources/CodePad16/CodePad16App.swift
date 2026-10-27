@@ -98,6 +98,7 @@ final class EditorDocument: ObservableObject, Identifiable {
     }
 
     var title: String { url?.lastPathComponent ?? "Untitled" }
+    var displayPath: String { url.map { ($0.path as NSString).abbreviatingWithTildeInPath } ?? "Unsaved" }
     var lineCount: Int { max(1, text.reduce(into: 1) { if $1 == "\n" { $0 += 1 } }) }
     func markSaved(at newURL: URL? = nil) {
         if let newURL, url != newURL {
@@ -238,9 +239,15 @@ struct CodePad16Window: View {
             }
         }
         .background(Color(nsColor: .textBackgroundColor))
+        .navigationTitle(windowTitle)
         .onAppear {
             appDelegate.reopenWindow = { openWindow(id: "main") }
         }
+    }
+
+    private var windowTitle: String {
+        guard let document = store.activeDocument else { return "CodePad16" }
+        return "\(document.title) - CodePad16"
     }
 
     private var header: some View {
@@ -333,8 +340,11 @@ struct CodePad16Window: View {
             Text("\(document.lineCount) lines")
             Spacer()
             if document.isDirty { Text("Modified").foregroundStyle(.orange) }
-            Text(document.url?.lastPathComponent ?? "Unsaved")
+            Text(document.displayPath)
                 .lineLimit(1)
+                .truncationMode(.middle)
+                .layoutPriority(1)
+                .help(document.url?.path ?? "This document has not been saved yet")
             Label("Ln \(editorController.cursorLine), Col \(editorController.cursorColumn)", systemImage: "textformat.123")
                 .monospacedDigit()
                 .help("Current line and column")
@@ -378,6 +388,7 @@ struct DocumentTab: View {
         .overlay(alignment: .bottom) {
             if isSelected { Rectangle().fill(Color.accentColor).frame(height: 2) }
         }
+        .help(document.url?.path ?? "This document has not been saved yet")
     }
 }
 
