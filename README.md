@@ -1,8 +1,8 @@
-# CodePad for macOS
+# CodePad16 for macOS
 
 A small, native macOS text and code editor prototype for Apple Silicon. It is an independent project with a familiar tabbed-editor workflow; it is not an official Notepad++ release and is not affiliated with the Notepad++ project.
 
-![CodePad for macOS showing a Swift file open in two tabs with syntax highlighting, a line-number gutter, and the New, Open, Save, and Find toolbar](Assets/preview.png)
+![CodePad16 for macOS showing a Swift file open in two tabs with syntax highlighting, a line-number gutter, and the New, Open, Save, and Find toolbar](Assets/preview.png)
 
 ## Current features
 
@@ -27,7 +27,7 @@ Requirements: macOS 13 or later and Xcode Command Line Tools (Swift 5.9 or later
 
 ```sh
 ./scripts/build-app.sh
-open dist/CodePad.app
+open dist/CodePad16.app
 ```
 
 The script builds for the host architecture. Run it on an Apple Silicon Mac to produce an `arm64` app. The app is ad-hoc signed for local testing, but it is not Developer ID signed or notarized, so macOS may show a security prompt when opening it.
@@ -38,11 +38,11 @@ To package the built app as a drag-to-Applications disk image, run:
 ./scripts/make-dmg.sh
 ```
 
-This creates `dist/CodePad-macOS-arm64.dmg`. Build the app first with `./scripts/build-app.sh` if `dist/CodePad.app` is missing.
+This creates `dist/CodePad16-macOS-arm64.dmg`. Build the app first with `./scripts/build-app.sh` if `dist/CodePad16.app` is missing.
 
 ## How the Notepad++ source informed the design
 
-The linked source separates application-level command handling (`PowerEditor/src/Notepad_plus.cpp` and `NppCommands.cpp`), document and file state (`ScintillaComponent/Buffer.*`), and the editor view (`ScintillaComponent/ScintillaEditView.*`, backed by Scintilla and Lexilla). CodePad uses the upstream Scintilla editor and Lexilla lexer sources for syntax coloring, while keeping the document lifecycle and interface native to macOS.
+The linked source separates application-level command handling (`PowerEditor/src/Notepad_plus.cpp` and `NppCommands.cpp`), document and file state (`ScintillaComponent/Buffer.*`), and the editor view (`ScintillaComponent/ScintillaEditView.*`, backed by Scintilla and Lexilla). CodePad16 uses the upstream Scintilla editor and Lexilla lexer sources for syntax coloring, while keeping the document lifecycle and interface native to macOS.
 
 The editable SVG is in `Assets/cat-logo.svg`; the matching Core Graphics renderer is in `scripts/render-icon.swift`. Regenerate the ICNS bundle with `./scripts/make-icon.sh`.
 
@@ -50,7 +50,7 @@ Scintilla and Lexilla are distributed under their permissive license in `Vendor/
 
 ## Acknowledgments
 
-Thank you to Don Ho ([don.h@free.fr](mailto:don.h@free.fr)) and the Notepad++ contributors for building Notepad++ and for making its source code available as open source. CodePad would not exist without that work: the Notepad++ source described above was the reference for this editor's design, and it is the upstream source for the bundled Scintilla and Lexilla code in `Vendor/NotepadPlusPlus/`. We are grateful to the Notepad++ developer and community for keeping the project open.
+Thank you to Don Ho ([don.h@free.fr](mailto:don.h@free.fr)) and the Notepad++ contributors for building Notepad++ and for making its source code available as open source. CodePad16 would not exist without that work: the Notepad++ source described above was the reference for this editor's design, and it is the upstream source for the bundled Scintilla and Lexilla code in `Vendor/NotepadPlusPlus/`. We are grateful to the Notepad++ developer and community for keeping the project open.
 
 Thanks also to Neil Hodgson and the Scintilla and Lexilla contributors, whose editor components Notepad++ itself builds on.
 

@@ -1,4 +1,4 @@
-#import "CodePadScintillaView.h"
+#import "CodePad16ScintillaView.h"
 #import "ScintillaView.h"
 #import "ScintillaTypes.h"
 #import "Scintilla.h"
@@ -7,12 +7,12 @@
 #include "ILexer.h"
 #include "Lexilla.h"
 
-@interface CodePadScintillaView () <ScintillaNotificationProtocol>
+@interface CodePad16ScintillaView () <ScintillaNotificationProtocol>
 @property(nonatomic, strong) ScintillaView *editor;
 @property(nonatomic, copy) NSString *configuredLexer;
 @end
 
-@implementation CodePadScintillaView
+@implementation CodePad16ScintillaView
 
 - (instancetype)initWithFrame:(NSRect)frame {
     self = [super initWithFrame:frame];

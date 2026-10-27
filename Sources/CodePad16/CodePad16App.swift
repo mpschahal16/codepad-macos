@@ -34,13 +34,13 @@ struct LanguageMode: Identifiable, Hashable {
 }
 
 @main
-struct CodePadApp: App {
+struct CodePad16App: App {
     @StateObject private var store = EditorStore()
-    @NSApplicationDelegateAdaptor(CodePadAppDelegate.self) private var appDelegate
+    @NSApplicationDelegateAdaptor(CodePad16AppDelegate.self) private var appDelegate
 
     var body: some Scene {
         WindowGroup(id: "main") {
-            CodePadWindow(appDelegate: appDelegate)
+            CodePad16Window(appDelegate: appDelegate)
                 .environmentObject(store)
                 .frame(minWidth: 760, minHeight: 500)
         }
@@ -68,7 +68,7 @@ struct CodePadApp: App {
 }
 
 @MainActor
-final class CodePadAppDelegate: NSObject, NSApplicationDelegate {
+final class CodePad16AppDelegate: NSObject, NSApplicationDelegate {
     var reopenWindow: (() -> Void)?
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
@@ -212,8 +212,8 @@ final class EditorStore: ObservableObject {
     }
 }
 
-struct CodePadWindow: View {
-    let appDelegate: CodePadAppDelegate
+struct CodePad16Window: View {
+    let appDelegate: CodePad16AppDelegate
     @EnvironmentObject private var store: EditorStore
     @Environment(\.openWindow) private var openWindow
     @StateObject private var windowState = WindowState()
@@ -246,7 +246,7 @@ struct CodePadWindow: View {
     private var header: some View {
         HStack(spacing: 12) {
             CatLogoMark(size: 32)
-            Text("CodePad")
+            Text("CodePad16")
                 .font(.system(size: 14, weight: .semibold))
             Spacer()
             Button { store.newDocument() } label: { Label("New", systemImage: "doc.badge.plus") }
@@ -399,7 +399,7 @@ final class WindowState: ObservableObject {
 
 @MainActor
 final class EditorController: ObservableObject {
-    weak var scintillaView: CodePadScintillaView?
+    weak var scintillaView: CodePad16ScintillaView?
     @Published private(set) var cursorLine = 1
     @Published private(set) var cursorColumn = 1
 
@@ -433,8 +433,8 @@ struct NativeTextEditor: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    func makeNSView(context: Context) -> CodePadScintillaView {
-        let editor = CodePadScintillaView(frame: .zero)
+    func makeNSView(context: Context) -> CodePad16ScintillaView {
+        let editor = CodePad16ScintillaView(frame: .zero)
         editor.lexerName = mode.lexer
         editor.keywordSets = mode.keywords
         editor.text = text
@@ -445,7 +445,7 @@ struct NativeTextEditor: NSViewRepresentable {
         return editor
     }
 
-    func updateNSView(_ editor: CodePadScintillaView, context: Context) {
+    func updateNSView(_ editor: CodePad16ScintillaView, context: Context) {
         let coordinator = context.coordinator
         // The view is reused when the active tab changes, so the callback must follow
         // the current binding instead of the document that created the view.

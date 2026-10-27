@@ -21,22 +21,22 @@ if [[ "${CODEPAD_ALLOW_UNSANDBOXED_BUILD:-0}" == "1" ]]; then
   SWIFT_BUILD_FLAGS+=(--disable-sandbox)
 fi
 CLANG_MODULE_CACHE_PATH="$ROOT/.cache/clang" swift build "${SWIFT_BUILD_FLAGS[@]}"
-APP="$ROOT/dist/CodePad.app"
+APP="$ROOT/dist/CodePad16.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$ROOT/.build/release/CodePad" "$APP/Contents/MacOS/CodePad"
-cp "$ROOT/Resources/CodePad.icns" "$APP/Contents/Resources/CodePad.icns"
+cp "$ROOT/.build/release/CodePad16" "$APP/Contents/MacOS/CodePad16"
+cp "$ROOT/Resources/CodePad16.icns" "$APP/Contents/Resources/CodePad16.icns"
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>CFBundleDevelopmentRegion</key><string>en</string>
-  <key>CFBundleExecutable</key><string>CodePad</string>
-  <key>CFBundleIconFile</key><string>CodePad</string>
-  <key>CFBundleIdentifier</key><string>org.mpschahal16.codepad</string>
+  <key>CFBundleExecutable</key><string>CodePad16</string>
+  <key>CFBundleIconFile</key><string>CodePad16</string>
+  <key>CFBundleIdentifier</key><string>org.mpschahal16.codepad16</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-  <key>CFBundleName</key><string>CodePad</string>
+  <key>CFBundleName</key><string>CodePad16</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleSignature</key><string>????</string>
   <key>CFBundleSupportedPlatforms</key><array><string>MacOSX</string></array>

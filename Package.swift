@@ -2,20 +2,20 @@
 import PackageDescription
 
 let package = Package(
-    name: "CodePad",
+    name: "CodePad16",
     defaultLocalization: "en",
     platforms: [.macOS(.v13)],
     products: [
-        .executable(name: "CodePad", targets: ["CodePad"])
+        .executable(name: "CodePad16", targets: ["CodePad16"])
     ],
     targets: [
-        .executableTarget(name: "CodePad", dependencies: ["ScintillaNative"]),
+        .executableTarget(name: "CodePad16", dependencies: ["ScintillaNative"]),
         .target(
             name: "ScintillaNative",
             path: "Vendor/NotepadPlusPlus",
             exclude: ["scintilla/cocoa/ScintillaTest", "scintilla/cocoa/Scintilla/Scintilla.xcodeproj", "scintilla/cocoa/res"],
             sources: [
-                "scintilla/cocoa/CodePadBridge/CodePadScintillaView.mm",
+                "scintilla/cocoa/CodePad16Bridge/CodePad16ScintillaView.mm",
                 "scintilla/cocoa/PlatCocoa.mm", "scintilla/cocoa/ScintillaCocoa.mm",
                 "scintilla/cocoa/ScintillaView.mm", "scintilla/cocoa/InfoBar.mm",
                 "scintilla/src/AutoComplete.cxx", "scintilla/src/CallTip.cxx", "scintilla/src/CaseConvert.cxx",
@@ -161,7 +161,7 @@ let package = Package(
                 "lexilla/lexers/LexYAML.cxx",
                 "lexilla/lexers/LexZig.cxx"
             ],
-            publicHeadersPath: "scintilla/cocoa/CodePadBridge",
+            publicHeadersPath: "scintilla/cocoa/CodePad16Bridge",
             cxxSettings: [
                 .headerSearchPath("scintilla/include"), .headerSearchPath("scintilla/src"),
                 .headerSearchPath("scintilla/cocoa"), .headerSearchPath("lexilla/include"),

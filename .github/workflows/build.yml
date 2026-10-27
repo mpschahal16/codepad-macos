@@ -15,8 +15,8 @@ jobs:
       - name: Build app bundle
         run: ./scripts/build-app.sh
       - name: Package app
-        run: ditto -c -k --sequesterRsrc --keepParent dist/CodePad.app CodePad-macos-arm64.zip
+        run: ditto -c -k --sequesterRsrc --keepParent dist/CodePad16.app CodePad16-macos-arm64.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: CodePad-macos-arm64
-          path: CodePad-macos-arm64.zip
+          name: CodePad16-macos-arm64
+          path: CodePad16-macos-arm64.zip

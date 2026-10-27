@@ -2,7 +2,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface CodePadScintillaView : NSView
+@interface CodePad16ScintillaView : NSView
 @property(nonatomic, copy) NSString *text;
 @property(nonatomic, copy) NSString *lexerName;
 @property(nonatomic, copy) NSArray<NSString *> *keywordSets;

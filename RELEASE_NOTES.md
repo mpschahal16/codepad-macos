@@ -1,4 +1,4 @@
-# CodePad release notes
+# CodePad16 release notes
 
 ## 0.0.2
 
@@ -29,7 +29,7 @@ Second prototype release for Apple Silicon macOS.
 
 This is an early prototype. Plugins, session restore, encoding selection, and advanced search are not included. Swift uses the C-family lexer as an initial approximation. The app is ad-hoc signed and not notarized, so macOS may ask you to confirm the first launch.
 
-The README credits Notepad++ and its author for making the source available; CodePad is an independent project and is not an official Notepad++ release.
+The README credits Notepad++ and its author for making the source available; CodePad16 is an independent project and is not an official Notepad++ release.
 
 ## 0.0.1
 
