@@ -8,6 +8,8 @@ Second prototype release for Apple Silicon macOS.
 
 - Syntax highlighting for C, C++, C#, Java, JavaScript, TypeScript, Python, Swift, HTML, CSS, JSON, XML, and SQL
 - Automatic language detection from the file extension, with a language picker in the status bar
+- UTF-8 (with or without a BOM), UTF-16, UTF-32, and ISO-8859-1 file encodings, detected on open, preserved on save, and selectable in the status bar
+- Full Unicode text, including accented characters, CJK, and emoji
 - Line-number gutter backed by Scintilla
 - Drag-to-Applications disk image with an arranged Finder layout
 
@@ -27,7 +29,7 @@ Second prototype release for Apple Silicon macOS.
 
 ### Limitations
 
-This is an early prototype. Plugins, session restore, encoding selection, and advanced search are not included. Swift uses the C-family lexer as an initial approximation. The app is ad-hoc signed and not notarized, so macOS may ask you to confirm the first launch.
+This is an early prototype. Plugins, session restore, and advanced search are not included. Swift uses the C-family lexer as an initial approximation. The app is ad-hoc signed and not notarized, so macOS may ask you to confirm the first launch.
 
 The README credits Notepad++ and its author for making the source available; CodePad16 is an independent project and is not an official Notepad++ release.
 

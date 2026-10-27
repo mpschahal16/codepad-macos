@@ -10,7 +10,7 @@ A small, native macOS text and code editor prototype for Apple Silicon. It is an
 - Matching cat logo in the app icon and window header
 - Multiple open documents in tabs
 - New, open, save, and save as
-- UTF-8 text files
+- UTF-8, UTF-16, UTF-32, and ISO-8859-1 text files, detected on open and preserved on save
 - Native Find interface (`⌘F`)
 - Syntax highlighting and automatic language detection for C, C++, C#, Java, JavaScript, TypeScript, Python, Swift, HTML, CSS, JSON, XML, and SQL
 - A language-mode picker for changing the detected mode
@@ -19,7 +19,7 @@ A small, native macOS text and code editor prototype for Apple Silicon. It is an
 - Encoding label and line count
 - Menu and keyboard shortcuts for common actions
 
-This is a prototype, not feature parity with Notepad++. Plugins, session restore, encoding selection, and advanced search are not implemented yet. Swift uses the C-family lexer as an initial approximation.
+This is a prototype, not feature parity with Notepad++. Plugins, session restore, and advanced search are not implemented yet. Swift uses the C-family lexer as an initial approximation.
 
 ## Build on Apple Silicon
 

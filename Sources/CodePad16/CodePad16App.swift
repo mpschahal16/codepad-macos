@@ -87,13 +87,15 @@ final class EditorDocument: ObservableObject, Identifiable {
     }
     @Published var isDirty = false
     @Published var languageMode: LanguageMode
+    @Published var encoding: TextEncoding
     var url: URL?
     private var savedText: String
 
-    init(text: String = "", url: URL? = nil) {
+    init(text: String = "", url: URL? = nil, encoding: TextEncoding = .utf8) {
         self.text = text
         self.savedText = text
         self.url = url
+        self.encoding = encoding
         self.languageMode = LanguageMode.detect(url: url)
     }
 
@@ -144,8 +146,15 @@ final class EditorStore: ObservableObject {
                 continue
             }
             do {
-                let contents = try String(contentsOf: url, encoding: .utf8)
-                let document = EditorDocument(text: contents, url: url)
+                let data = try Data(contentsOf: url)
+                guard let (encoding, contents) = TextEncoding.decode(data) else {
+                    showError(
+                        "Could not open \(url.lastPathComponent)",
+                        detail: "The file is not valid UTF-8, UTF-16, UTF-32, or ISO-8859-1 text."
+                    )
+                    continue
+                }
+                let document = EditorDocument(text: contents, url: url, encoding: encoding)
                 documents.append(document)
                 activeDocumentID = document.id
             } catch {
@@ -194,8 +203,15 @@ final class EditorStore: ObservableObject {
     }
 
     private func write(_ document: EditorDocument, to url: URL) -> Bool {
+        guard let data = document.encoding.encode(document.text) else {
+            showError(
+                "Could not save \(url.lastPathComponent)",
+                detail: "Some characters cannot be represented in \(document.encoding.name). Choose UTF-8 in the status bar and save again."
+            )
+            return false
+        }
         do {
-            try document.text.write(to: url, atomically: true, encoding: .utf8)
+            try data.write(to: url, options: .atomic)
             document.markSaved(at: url)
             return true
         } catch {
@@ -336,7 +352,23 @@ struct CodePad16Window: View {
                 Label(document.languageMode.name, systemImage: "chevron.up.chevron.down")
             }
             .menuStyle(.borderlessButton)
-            Text("UTF-8")
+            Menu {
+                ForEach(TextEncoding.all) { encoding in
+                    Button {
+                        document.encoding = encoding
+                    } label: {
+                        if document.encoding.id == encoding.id {
+                            Label(encoding.name, systemImage: "checkmark")
+                        } else {
+                            Text(encoding.name)
+                        }
+                    }
+                }
+            } label: {
+                Text(document.encoding.name)
+            }
+            .menuStyle(.borderlessButton)
+            .help("File encoding")
             Text("\(document.lineCount) lines")
             Spacer()
             if document.isDirty { Text("Modified").foregroundStyle(.orange) }
