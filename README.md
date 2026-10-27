@@ -26,6 +26,8 @@ This is a prototype, not feature parity with Notepad++. Plugins, session restore
 Requirements: macOS 13 or later and Xcode Command Line Tools (Swift 5.9 or later).
 
 ```sh
+git clone https://github.com/mpschahal16/codepad16-macos.git
+cd codepad16-macos
 ./scripts/build-app.sh
 open dist/CodePad16.app
 ```
