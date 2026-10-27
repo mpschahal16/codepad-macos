@@ -445,6 +445,11 @@ struct NativeTextEditor: NSViewRepresentable {
         textView.delegate = context.coordinator
         textView.string = text
         scrollView.documentView = textView
+        let lineNumberRuler = LineNumberRulerView(textView: textView, scrollView: scrollView)
+        scrollView.verticalRulerView = lineNumberRuler
+        scrollView.hasVerticalRuler = true
+        scrollView.rulersVisible = true
+        lineNumberRuler.needsDisplay = true
         controller.textView = textView
         controller.updateCursorPosition(in: textView)
         return scrollView
@@ -468,12 +473,109 @@ struct NativeTextEditor: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             if parent.text != textView.string { parent.text = textView.string }
             parent.controller.updateCursorPosition(in: textView)
+            (textView.enclosingScrollView?.verticalRulerView as? LineNumberRulerView)?.needsDisplay = true
         }
 
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             parent.controller.updateCursorPosition(in: textView)
+            (textView.enclosingScrollView?.verticalRulerView as? LineNumberRulerView)?.needsDisplay = true
         }
+    }
+}
+
+final class LineNumberRulerView: NSRulerView {
+    private weak var textView: NSTextView?
+    private let labelFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+    private let horizontalPadding: CGFloat = 8
+
+    init(textView: NSTextView, scrollView: NSScrollView) {
+        self.textView = textView
+        super.init(scrollView: scrollView, orientation: .verticalRuler)
+        clientView = textView
+        ruleThickness = 44
+    }
+
+    required init(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func drawHashMarksAndLabels(in rect: NSRect) {
+        guard let textView,
+              let layoutManager = textView.layoutManager,
+              let textContainer = textView.textContainer else { return }
+
+        NSColor.windowBackgroundColor.setFill()
+        NSBezierPath(rect: rect).fill()
+        NSColor.separatorColor.withAlphaComponent(0.55).setStroke()
+        let border = NSBezierPath()
+        border.move(to: NSPoint(x: bounds.maxX - 0.5, y: rect.minY))
+        border.line(to: NSPoint(x: bounds.maxX - 0.5, y: rect.maxY))
+        border.stroke()
+
+        layoutManager.ensureLayout(for: textContainer)
+        let visibleRect = textView.visibleRect
+        let glyphRange = layoutManager.glyphRange(forBoundingRect: visibleRect, in: textContainer)
+        let string = textView.string as NSString
+        let caretLocation = min(textView.selectedRange().location, string.length)
+        let currentLine = string.substring(to: caretLocation).reduce(into: 1) { count, character in
+            if character == "\n" { count += 1 }
+        }
+        if glyphRange.length == 0, string.length == 0 {
+            let lineHeight = textView.font?.boundingRectForFont.height ?? 16
+            let textOrigin = textView.textContainerOrigin
+            let lineRect = NSRect(x: textOrigin.x, y: textOrigin.y, width: 1, height: lineHeight)
+            drawLineNumber(1, in: convert(lineRect, from: textView), isCurrent: true)
+            return
+        }
+        let characterRange = layoutManager.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
+        let preceding = NSRange(location: 0, length: min(characterRange.location, string.length))
+        let firstVisibleLine = string.substring(with: preceding).reduce(into: 1) { count, character in
+            if character == "\n" { count += 1 }
+        }
+        var lastDrawnLine = firstVisibleLine - 1
+
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { lineRect, _, container, fragmentGlyphRange, _ in
+            guard container === textContainer else { return }
+            let fragmentCharacters = layoutManager.characterRange(forGlyphRange: fragmentGlyphRange, actualGlyphRange: nil)
+            let lineStart = string.substring(to: min(fragmentCharacters.location, string.length))
+            let number = lineStart.reduce(into: 1) { count, character in
+                if character == "\n" { count += 1 }
+            }
+            guard number != lastDrawnLine else { return }
+            lastDrawnLine = number
+
+            let textLineRect = lineRect.offsetBy(dx: textView.textContainerOrigin.x, dy: textView.textContainerOrigin.y)
+            self.drawLineNumber(number, in: self.convert(textLineRect, from: textView), isCurrent: number == currentLine)
+        }
+
+        if string.hasSuffix("\n"), layoutManager.extraLineFragmentTextContainer === textContainer {
+            let extraLineRect = layoutManager.extraLineFragmentRect.offsetBy(
+                dx: textView.textContainerOrigin.x,
+                dy: textView.textContainerOrigin.y
+            )
+            drawLineNumber(currentLineCount(in: string), in: convert(extraLineRect, from: textView), isCurrent: currentLine == currentLineCount(in: string))
+        }
+    }
+
+    private func currentLineCount(in string: NSString) -> Int {
+        string.substring(to: string.length).reduce(into: 1) { count, character in
+            if character == "\n" { count += 1 }
+        }
+    }
+
+    private func drawLineNumber(_ number: Int, in lineRect: NSRect, isCurrent: Bool) {
+        let label = "\(number)" as NSString
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: isCurrent ? NSFont.monospacedSystemFont(ofSize: 11, weight: .semibold) : labelFont,
+            .foregroundColor: isCurrent ? NSColor.controlAccentColor : NSColor.secondaryLabelColor
+        ]
+        let labelSize = label.size(withAttributes: attributes)
+        let origin = NSPoint(
+            x: bounds.width - labelSize.width - horizontalPadding,
+            y: lineRect.midY - labelSize.height / 2
+        )
+        label.draw(at: origin, withAttributes: attributes)
     }
 }
 
