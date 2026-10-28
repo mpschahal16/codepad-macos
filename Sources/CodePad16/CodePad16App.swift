@@ -70,12 +70,17 @@ struct CodePad16App: App {
 @MainActor
 final class CodePad16AppDelegate: NSObject, NSApplicationDelegate {
     var reopenWindow: (() -> Void)?
+    var saveSession: (() -> Void)?
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
         guard !hasVisibleWindows, let reopenWindow else { return true }
         sender.activate(ignoringOtherApps: true)
         reopenWindow()
         return false
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        saveSession?()
     }
 }
 
@@ -89,14 +94,22 @@ final class EditorDocument: ObservableObject, Identifiable {
     @Published var languageMode: LanguageMode
     @Published var encoding: TextEncoding
     var url: URL?
+    /// Last caret offset and scroll position, updated while the document is shown.
+    var caretPosition = 0
+    var firstVisibleLine = 0
     private var savedText: String
 
-    init(text: String = "", url: URL? = nil, encoding: TextEncoding = .utf8) {
+    init(
+        text: String = "",
+        url: URL? = nil,
+        encoding: TextEncoding = .utf8,
+        languageMode: LanguageMode? = nil
+    ) {
         self.text = text
         self.savedText = text
         self.url = url
         self.encoding = encoding
-        self.languageMode = LanguageMode.detect(url: url)
+        self.languageMode = languageMode ?? LanguageMode.detect(url: url)
     }
 
     var title: String { url?.lastPathComponent ?? "Untitled" }
@@ -116,11 +129,78 @@ final class EditorDocument: ObservableObject, Identifiable {
 final class EditorStore: ObservableObject {
     @Published private(set) var documents: [EditorDocument]
     @Published var activeDocumentID: UUID?
+    /// Records the caret and scroll position of the visible document.
+    var captureActiveDocument: (() -> Void)?
 
     init() {
-        let first = EditorDocument()
-        documents = [first]
-        activeDocumentID = first.id
+        let restored = Self.restoreSession()
+        if let restored, !restored.documents.isEmpty {
+            documents = restored.documents
+            activeDocumentID = documents[min(max(restored.activeIndex, 0), documents.count - 1)].id
+        } else {
+            let first = EditorDocument()
+            documents = [first]
+            activeDocumentID = first.id
+        }
+    }
+
+    private static func restoreSession() -> (documents: [EditorDocument], activeIndex: Int)? {
+        guard let state = SessionStore.load() else { return nil }
+        var restored: [EditorDocument] = []
+
+        for entry in state.documents {
+            let encoding = TextEncoding.all.first { $0.id == entry.encodingID } ?? .utf8
+            let language = LanguageMode.all.first { $0.id == entry.languageID }
+
+            if let urlString = entry.url, let url = URL(string: urlString) {
+                guard FileManager.default.fileExists(atPath: url.path) else { continue }
+                if entry.isDirty, let text = entry.text {
+                    let document = EditorDocument(
+                        text: text, url: url, encoding: encoding, languageMode: language
+                    )
+                    document.isDirty = true
+                    document.caretPosition = entry.caretPosition
+                    document.firstVisibleLine = entry.firstVisibleLine
+                    restored.append(document)
+                } else if let data = try? Data(contentsOf: url),
+                          let (detectedEncoding, text) = TextEncoding.decode(data) {
+                    let document = EditorDocument(
+                        text: text, url: url, encoding: detectedEncoding, languageMode: language
+                    )
+                    document.caretPosition = entry.caretPosition
+                    document.firstVisibleLine = entry.firstVisibleLine
+                    restored.append(document)
+                }
+            } else {
+                let text = entry.text ?? ""
+                let document = EditorDocument(
+                    text: text, url: nil, encoding: encoding, languageMode: language
+                )
+                document.isDirty = !text.isEmpty
+                document.caretPosition = entry.caretPosition
+                document.firstVisibleLine = entry.firstVisibleLine
+                restored.append(document)
+            }
+        }
+
+        return (restored, state.activeIndex)
+    }
+
+    func saveSession() {
+        captureActiveDocument?()
+        let states = documents.map { document in
+            SessionState.Document(
+                url: document.url?.absoluteString,
+                text: (document.isDirty || document.url == nil) ? document.text : nil,
+                isDirty: document.isDirty,
+                encodingID: document.encoding.id,
+                languageID: document.languageMode.id,
+                caretPosition: document.caretPosition,
+                firstVisibleLine: document.firstVisibleLine
+            )
+        }
+        let index = documents.firstIndex { $0.id == activeDocumentID } ?? 0
+        SessionStore.save(SessionState(documents: states, activeIndex: index))
     }
 
     var activeDocument: EditorDocument? {
@@ -128,12 +208,23 @@ final class EditorStore: ObservableObject {
     }
 
     func newDocument() {
+        captureActiveDocument?()
         let document = EditorDocument()
         documents.append(document)
         activeDocumentID = document.id
+        saveSession()
+    }
+
+    func activate(_ document: EditorDocument) {
+        if document.id != activeDocumentID {
+            captureActiveDocument?()
+        }
+        activeDocumentID = document.id
+        saveSession()
     }
 
     func openFiles() {
+        captureActiveDocument?()
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.item]
         panel.allowsMultipleSelection = true
@@ -161,6 +252,7 @@ final class EditorStore: ObservableObject {
                 showError("Could not open \(url.lastPathComponent)", detail: error.localizedDescription)
             }
         }
+        saveSession()
     }
 
     @discardableResult
@@ -200,6 +292,7 @@ final class EditorStore: ObservableObject {
         documents.removeAll { $0.id == document.id }
         if documents.isEmpty { newDocument(); return }
         if activeDocumentID == document.id { activeDocumentID = documents.last?.id }
+        saveSession()
     }
 
     private func write(_ document: EditorDocument, to url: URL) -> Bool {
@@ -213,6 +306,7 @@ final class EditorStore: ObservableObject {
         do {
             try data.write(to: url, options: .atomic)
             document.markSaved(at: url)
+            saveSession()
             return true
         } catch {
             showError("Could not save \(url.lastPathComponent)", detail: error.localizedDescription)
@@ -258,6 +352,11 @@ struct CodePad16Window: View {
         .navigationTitle(windowTitle)
         .onAppear {
             appDelegate.reopenWindow = { openWindow(id: "main") }
+            appDelegate.saveSession = { store.saveSession() }
+            store.captureActiveDocument = { [weak store] in
+                guard let store, let document = store.activeDocument else { return }
+                editorController.captureState(into: document)
+            }
         }
     }
 
@@ -321,7 +420,7 @@ struct CodePad16Window: View {
             HStack(spacing: 0) {
                 ForEach(store.documents) { document in
                     DocumentTab(document: document, isSelected: document.id == store.activeDocumentID) {
-                        store.activeDocumentID = document.id
+                        store.activate(document)
                     } onClose: {
                         store.close(document)
                     }
@@ -429,8 +528,13 @@ struct EditorPane: View {
     @ObservedObject var controller: EditorController
 
     var body: some View {
-        NativeTextEditor(text: $document.text, mode: document.languageMode, controller: controller)
-            .accessibilityLabel("Text editor")
+        NativeTextEditor(
+            text: $document.text,
+            document: document,
+            mode: document.languageMode,
+            controller: controller
+        )
+        .accessibilityLabel("Text editor")
     }
 }
 
@@ -449,6 +553,12 @@ final class EditorController: ObservableObject {
     func updateCursorPosition(line: Int, column: Int) {
         cursorLine = max(1, line)
         cursorColumn = max(1, column)
+    }
+
+    func captureState(into document: EditorDocument) {
+        guard let editor = scintillaView else { return }
+        document.caretPosition = editor.caretPosition
+        document.firstVisibleLine = editor.firstVisibleLine
     }
 
     func findNext(_ query: String) { scintillaView?.find(query, backwards: false) }
@@ -471,6 +581,7 @@ final class EditorController: ObservableObject {
 
 struct NativeTextEditor: NSViewRepresentable {
     @Binding var text: String
+    let document: EditorDocument
     let mode: LanguageMode
     @ObservedObject var controller: EditorController
 
@@ -481,6 +592,12 @@ struct NativeTextEditor: NSViewRepresentable {
         editor.lexerName = mode.lexer
         editor.keywordSets = mode.keywords
         editor.text = text
+        context.coordinator.loadedDocumentID = document.id
+        context.coordinator.restoreViewState(
+            caretPosition: document.caretPosition,
+            firstVisibleLine: document.firstVisibleLine,
+            in: editor
+        )
         editor.onChange = { [weak coordinator = context.coordinator] editedText, line, column, _ in
             coordinator?.editorDidChange(text: editedText, line: line, column: column)
         }
@@ -493,10 +610,21 @@ struct NativeTextEditor: NSViewRepresentable {
         // The view is reused when the active tab changes, so the callback must follow
         // the current binding instead of the document that created the view.
         coordinator.parent = self
+        let documentChanged = coordinator.loadedDocumentID != document.id
         coordinator.isUpdatingFromView = true
         defer { coordinator.isUpdatingFromView = false }
         controller.scintillaView = editor
-        if editor.text != text { editor.text = text }
+        if documentChanged || editor.text != text {
+            editor.text = text
+            if documentChanged {
+                coordinator.loadedDocumentID = document.id
+                coordinator.restoreViewState(
+                    caretPosition: document.caretPosition,
+                    firstVisibleLine: document.firstVisibleLine,
+                    in: editor
+                )
+            }
+        }
         if editor.lexerName != mode.lexer { editor.lexerName = mode.lexer }
         if editor.keywordSets != mode.keywords { editor.keywordSets = mode.keywords }
     }
@@ -504,8 +632,26 @@ struct NativeTextEditor: NSViewRepresentable {
     final class Coordinator: NSObject {
         var parent: NativeTextEditor
         var isUpdatingFromView = false
+        var loadedDocumentID: UUID?
 
         init(_ parent: NativeTextEditor) { self.parent = parent }
+
+        /// Applies the saved caret and scroll position. The scroll position only
+        /// takes effect once the view has a size, so it is applied again on the
+        /// next run loop after layout.
+        func restoreViewState(
+            caretPosition: Int,
+            firstVisibleLine: Int,
+            in editor: CodePad16ScintillaView
+        ) {
+            editor.setCaretPosition(caretPosition)
+            editor.setFirstVisibleLine(firstVisibleLine)
+            DispatchQueue.main.async { [weak editor] in
+                guard let editor else { return }
+                editor.setCaretPosition(caretPosition)
+                editor.setFirstVisibleLine(firstVisibleLine)
+            }
+        }
 
         func editorDidChange(text editedText: String, line: Int, column: Int) {
             // Notifications fired while loading a document (text or lexer assignment)

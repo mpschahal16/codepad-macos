@@ -10,6 +10,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)selectRange:(NSRange)range;
 - (NSRange)selection;
 - (void)find:(NSString *)query backwards:(BOOL)backwards;
+@property(nonatomic, readonly) NSInteger caretPosition;
+@property(nonatomic, readonly) NSInteger firstVisibleLine;
+- (void)setCaretPosition:(NSInteger)position;
+- (void)setFirstVisibleLine:(NSInteger)line;
 @end
 
 NS_ASSUME_NONNULL_END

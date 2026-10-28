@@ -15,11 +15,12 @@ A small, native macOS text and code editor prototype for Apple Silicon. It is an
 - Syntax highlighting and automatic language detection for C, C++, C#, Java, JavaScript, TypeScript, Python, Swift, HTML, CSS, JSON, XML, and SQL
 - A language-mode picker for changing the detected mode
 - Scintilla line-number gutter
+- Restores the previous session on launch, including open tabs, cursor and scroll position, language, encoding, and unsaved changes
 - Unsaved-change indicator and close confirmation
 - Encoding label and line count
 - Menu and keyboard shortcuts for common actions
 
-This is a prototype, not feature parity with Notepad++. Plugins, session restore, and advanced search are not implemented yet. Swift uses the C-family lexer as an initial approximation.
+This is a prototype, not feature parity with Notepad++. Plugins and advanced search are not implemented yet. Swift uses the C-family lexer as an initial approximation.
 
 ## Build on Apple Silicon
 

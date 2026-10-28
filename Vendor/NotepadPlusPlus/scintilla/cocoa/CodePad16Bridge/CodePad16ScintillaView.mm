@@ -161,4 +161,22 @@
     [self.editor message:(backwards ? SCI_SEARCHPREV : SCI_SEARCHNEXT) wParam:query.length lParam:(sptr_t)needle];
 }
 
+- (NSInteger)caretPosition {
+    return (NSInteger)[self.editor message:SCI_GETCURRENTPOS];
+}
+
+- (void)setCaretPosition:(NSInteger)position {
+    if (position < 0) return;
+    [self.editor message:SCI_GOTOPOS wParam:position lParam:0];
+}
+
+- (NSInteger)firstVisibleLine {
+    return (NSInteger)[self.editor message:SCI_GETFIRSTVISIBLELINE];
+}
+
+- (void)setFirstVisibleLine:(NSInteger)line {
+    if (line < 0) return;
+    [self.editor message:SCI_SETFIRSTVISIBLELINE wParam:line lParam:0];
+}
+
 @end
