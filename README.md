@@ -11,6 +11,7 @@ A small, native macOS text and code editor prototype for Apple Silicon. It is an
 - Matching cat logo in the app icon and window header
 - Multiple open documents in tabs
 - New, open, save, and save as
+- Open a saved file in another application or reveal it in Finder from the File menu or a tab's context menu
 - UTF-8, UTF-16, UTF-32, and ISO-8859-1 text files, detected on open and preserved on save
 - Native Find interface (`⌘F`)
 - Syntax highlighting and automatic language detection for C, C++, C#, Java, JavaScript, TypeScript, Python, Swift, HTML, CSS, JSON, XML, and SQL

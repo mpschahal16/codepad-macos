@@ -71,6 +71,19 @@ struct CodePad16App: App {
                 }
                 .keyboardShortcut("s", modifiers: [.command, .shift])
                 .disabled(store.activeDocument == nil)
+                Divider()
+                Button("Open in Other Application…") {
+                    if let document = store.activeDocument {
+                        store.openInOtherApplication(document)
+                    }
+                }
+                .disabled(store.activeDocument == nil)
+                Button("Reveal in Finder") {
+                    if let document = store.activeDocument {
+                        store.revealInFinder(document)
+                    }
+                }
+                .disabled(store.activeDocument?.url == nil)
             }
         }
     }
@@ -279,6 +292,57 @@ final class EditorStore: ObservableObject {
         return write(document, to: url)
     }
 
+    /// Saves pending changes, then lets the user pick an application to open
+    /// the file with. Useful for previewing markup or handing a file off to
+    /// another editor.
+    func openInOtherApplication(_ document: EditorDocument) {
+        if document.url == nil || document.isDirty {
+            if document.isDirty {
+                let alert = NSAlert()
+                alert.alertStyle = .warning
+                alert.messageText = "Save changes before opening \(document.title) in another application?"
+                alert.informativeText = "The other application will open the saved version of the file."
+                alert.addButton(withTitle: "Save and Open")
+                alert.addButton(withTitle: "Cancel")
+                guard alert.runModal() == .alertFirstButtonReturn else { return }
+            }
+            guard save(document) else { return }
+        }
+        guard let url = document.url else { return }
+
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.directoryURL = FileManager.default.urls(for: .applicationDirectory, in: .localDomainMask).first
+        panel.message = "Choose an application to open \(url.lastPathComponent) with."
+        panel.prompt = "Open"
+        guard panel.runModal() == .OK, let applicationURL = panel.url else { return }
+
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        NSWorkspace.shared.open(
+            [url],
+            withApplicationAt: applicationURL,
+            configuration: configuration
+        ) { [weak self] _, error in
+            guard let error else { return }
+            Task { @MainActor in
+                self?.showError(
+                    "Could not open \(url.lastPathComponent)",
+                    detail: error.localizedDescription
+                )
+            }
+        }
+    }
+
+    /// Shows the document's saved file in Finder.
+    func revealInFinder(_ document: EditorDocument) {
+        guard let url = document.url else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
     func close(_ document: EditorDocument) {
         if document.isDirty {
             let alert = NSAlert()
@@ -454,6 +518,15 @@ struct CodePad16Window: View {
                         store.activate(document)
                     } onClose: {
                         store.close(document)
+                    }
+                    .contextMenu {
+                        Button("Open in Other Application…") {
+                            store.openInOtherApplication(document)
+                        }
+                        Button("Reveal in Finder") {
+                            store.revealInFinder(document)
+                        }
+                        .disabled(document.url == nil)
                     }
                 }
             }
