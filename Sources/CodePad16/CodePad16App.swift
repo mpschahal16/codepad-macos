@@ -36,15 +36,24 @@ struct LanguageMode: Identifiable, Hashable {
 @main
 struct CodePad16App: App {
     @StateObject private var store = EditorStore()
+    @StateObject private var appearance = AppearanceSettings()
     @NSApplicationDelegateAdaptor(CodePad16AppDelegate.self) private var appDelegate
 
     var body: some Scene {
         WindowGroup(id: "main") {
             CodePad16Window(appDelegate: appDelegate)
                 .environmentObject(store)
+                .environmentObject(appearance)
                 .frame(minWidth: 760, minHeight: 500)
         }
         .commands {
+            CommandGroup(after: .toolbar) {
+                Picker("Appearance", selection: $appearance.mode) {
+                    ForEach(AppearanceMode.allCases) { mode in
+                        Label(mode.title, systemImage: mode.symbolName).tag(mode)
+                    }
+                }
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Tab") { store.newDocument() }
                     .keyboardShortcut("n", modifiers: .command)
@@ -326,6 +335,7 @@ final class EditorStore: ObservableObject {
 struct CodePad16Window: View {
     let appDelegate: CodePad16AppDelegate
     @EnvironmentObject private var store: EditorStore
+    @EnvironmentObject private var appearance: AppearanceSettings
     @Environment(\.openWindow) private var openWindow
     @StateObject private var windowState = WindowState()
     @StateObject private var editorController = EditorController()
@@ -351,6 +361,7 @@ struct CodePad16Window: View {
         .background(Color(nsColor: .textBackgroundColor))
         .navigationTitle(windowTitle)
         .onAppear {
+            appearance.apply()
             appDelegate.reopenWindow = { openWindow(id: "main") }
             appDelegate.saveSession = { store.saveSession() }
             store.captureActiveDocument = { [weak store] in
@@ -379,6 +390,26 @@ struct CodePad16Window: View {
                 .keyboardShortcut("s", modifiers: .command)
             Button { windowState.showFind.toggle() } label: { Label("Find", systemImage: "magnifyingglass") }
                 .keyboardShortcut("f", modifiers: .command)
+            Divider().frame(height: 18)
+            Menu {
+                ForEach(AppearanceMode.allCases) { mode in
+                    Button {
+                        appearance.mode = mode
+                    } label: {
+                        if appearance.mode == mode {
+                            Label(mode.title, systemImage: "checkmark")
+                        } else {
+                            Text(mode.title)
+                        }
+                    }
+                }
+            } label: {
+                Label(appearance.mode.title, systemImage: appearance.mode.symbolName)
+                    .labelStyle(.iconOnly)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .help("Appearance: \(appearance.mode.title)")
         }
         .buttonStyle(.borderless)
         .padding(.horizontal, 16)

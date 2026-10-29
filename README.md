@@ -7,6 +7,7 @@ A small, native macOS text and code editor prototype for Apple Silicon. It is an
 ## Current features
 
 - Native macOS window and controls, built with SwiftUI and AppKit
+- Light, dark, and system appearance modes, selectable from the header or the View menu
 - Matching cat logo in the app icon and window header
 - Multiple open documents in tabs
 - New, open, save, and save as
