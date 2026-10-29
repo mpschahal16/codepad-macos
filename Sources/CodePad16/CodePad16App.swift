@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
-import ScintillaNative
+import CodePad16Editor
 
 struct LanguageMode: Identifiable, Hashable {
     let id: String

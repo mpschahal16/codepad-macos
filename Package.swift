@@ -9,13 +9,27 @@ let package = Package(
         .executable(name: "CodePad16", targets: ["CodePad16"])
     ],
     targets: [
-        .executableTarget(name: "CodePad16", dependencies: ["ScintillaNative"]),
+        .executableTarget(name: "CodePad16", dependencies: ["CodePad16Editor"]),
+        .target(
+            name: "CodePad16Editor",
+            dependencies: ["ScintillaNative"],
+            path: "Sources/CodePad16Editor",
+            publicHeadersPath: ".",
+            cxxSettings: [
+                .headerSearchPath("../../Vendor/NotepadPlusPlus/scintilla/include"),
+                .headerSearchPath("../../Vendor/NotepadPlusPlus/scintilla/src"),
+                .headerSearchPath("../../Vendor/NotepadPlusPlus/scintilla/cocoa"),
+                .headerSearchPath("../../Vendor/NotepadPlusPlus/lexilla/include"),
+                .headerSearchPath("../../Vendor/NotepadPlusPlus/lexilla/lexlib"),
+                .unsafeFlags(["-fobjc-arc", "-std=c++17"])
+            ],
+            linkerSettings: [.linkedFramework("Cocoa"), .linkedFramework("QuartzCore")]
+        ),
         .target(
             name: "ScintillaNative",
             path: "Vendor/NotepadPlusPlus",
             exclude: ["scintilla/cocoa/ScintillaTest", "scintilla/cocoa/Scintilla/Scintilla.xcodeproj", "scintilla/cocoa/res"],
             sources: [
-                "scintilla/cocoa/CodePad16Bridge/CodePad16ScintillaView.mm",
                 "scintilla/cocoa/PlatCocoa.mm", "scintilla/cocoa/ScintillaCocoa.mm",
                 "scintilla/cocoa/ScintillaView.mm", "scintilla/cocoa/InfoBar.mm",
                 "scintilla/src/AutoComplete.cxx", "scintilla/src/CallTip.cxx", "scintilla/src/CaseConvert.cxx",
@@ -161,7 +175,7 @@ let package = Package(
                 "lexilla/lexers/LexYAML.cxx",
                 "lexilla/lexers/LexZig.cxx"
             ],
-            publicHeadersPath: "scintilla/cocoa/CodePad16Bridge",
+            publicHeadersPath: "scintilla/include",
             cxxSettings: [
                 .headerSearchPath("scintilla/include"), .headerSearchPath("scintilla/src"),
                 .headerSearchPath("scintilla/cocoa"), .headerSearchPath("lexilla/include"),
